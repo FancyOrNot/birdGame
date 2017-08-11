@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        body {
+            text-align: center;
+        }
+
+        canvas {
+            border: 1px solid #000;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas height="600" width="800"></canvas>
+    <script src="land.js"></script>
+    <script src="sky.js"></script>
+    <script src="pipe.js"></script>
+    <script src="bird.js"></script>
+    <script>
+        var c = document.querySelector("canvas");
+        var ctx = c.getContext("2d");
+        // 游戏开始时间  游戏结束时间
+        var gameStartTime = new Date();
+        var gameOverTime = 0;
+        var isRunning = false;
+        var index = 0;
+        //    绘制小鸟游戏
+        // 绘制小鸟  动画  加速下落  小鸟下落时头的方向 鼠标点击小鸟向上飞  小鸟向上飞是头的方向
+        // 绘制小鸟
+        // 设置小鸟在canvas中开始的坐标
+        var canvasX = canvasY = 100;
+        // 鸟
+        // var birdImg = new Image();
+        var birdImgIndex = 0;
+        var startTime = new Date(), endTime = new Date();
+        // 加载完所有的图片
+        function loadImg(arrImg, callback) {
+            var cound = 0;
+            var imgList = {};
+            for (var i = 0; i < arrImg.length; i++) {
+                var img = new Image();
+                imgList[arrImg[i]] = img;
+                img.src = "../images/" + arrImg[i] + ".png";
+                img.onload = function () {
+                    cound++;
+                    if (cound == arrImg.length) {
+                        callback(imgList);
+                    }
+                }
+            }
+        };
+        loadImg(["sky", "birds", "land", "pipe2", "pipe1"], function (imgList) {
+            // 绘制管道
+            var pipes = [];
+            var pipesTopImg = imgList["pipe2"];
+            var pipesBottomImg = imgList["pipe1"];
+            for (var i = 0; i < 6; i++) {
+                var pipe = new Pipe({
+                    ctx: ctx,
+                    x: 300 + pipesTopImg.width * i * 3,
+                    imgTop: pipesTopImg,
+                    BottomImg: pipesBottomImg
+                })
+                pipes.push(pipe);
+            }
+            // 陆地
+            var landImg = imgList["land"];
+            var lands = [];
+            for (var i = 0; i < 4; i++) {
+                var land = new Land({
+                    ctx: ctx,
+                    x: landImg.width * i,
+                    y: c.height - landImg.height,
+                    img: landImg
+                });
+                lands.push(land);
+            }
+            // 封装天空的代码
+            var skys = [];
+            var skyImg = imgList["sky"];
+            for (var i = 0; i < 2; i++) {
+                var sky = new Sky({
+                    ctx: ctx,
+                    x: skyImg.width * i,
+                    y: 0,
+                    img: skyImg
+                });
+                skys.push(sky);
+            }
+            // 封装小鸟
+
+            var birdImg = imgList["birds"];
+            var bird = new Bird({
+                ctx: ctx,
+                x: 100,
+                y: 100,
+                birdImg: birdImg
+            });
+            // 让小鸟飞
+            function fly() {
+                endTime = new Date();
+                // 响应时间间隔
+                var offsetTime = endTime - startTime;
+                startTime = endTime;
+                // 清除画布
+                ctx.clearRect(0, 0, c.width, c.height);
+                ctx.beginPath();
+                // 绘制天空
+                for (var i = 0; i < 2; i++) {
+                    skys[i].drawSky();
+                }
+                // 绘制 陆地背景
+                for (var i = 0; i < lands.length; i++) {
+                    lands[i].drawLand();
+                }
+                // 绘制 随机产生的管道
+                for (var i = 0; i < pipes.length; i++) {
+                    pipes[i].drawPipe();
+                }
+
+                // 绘制时间文本
+                gameOverTime = new Date();
+                // 持续时间
+                var duration = gameOverTime - gameStartTime;
+                var hour = Math.floor(duration / 1000 / 3600);
+                var minute = Math.floor(duration / 1000 % 3600 / 60);
+                var second = Math.floor(duration / 1000 % 60);
+                var ms = Math.floor(duration / 1000);
+                var text = '您坚持了：' + hour + '小时' + minute + '分' + second + '秒' + ms + '毫秒';
+                // 获得文本宽度
+                var textWidth = ctx.measureText(text).width;
+                // 设置文本背景
+                ctx.fillStyle = 'rgba(71,166,17,.5)';
+                ctx.fillRect(c.width - textWidth - 130, 5, c.width - textWidth - 240, 40);
+                ctx.font = '20px 微软雅黑';
+                ctx.fillStyle = '#fff';
+                ctx.textBaseline = 'top';
+                ctx.fillText(text, c.width - textWidth - 120, 10);
+
+                // 绘制小鸟
+                bird.drawBird(offsetTime);
+                if (ctx.isPointInPath(bird.x + 18, bird.y + 18)) {
+                    ctx.font = "30px Verdana";
+                    // 创建渐变
+                    var strTtxt = '游戏结束啦';
+                    var textStartWidth = ctx.measureText(strTtxt).width;
+                    var gradient = ctx.createLinearGradient(300, 300, c.width, 0);
+                    gradient.addColorStop("0", "magenta");
+                    gradient.addColorStop("0.5", "blue");
+                    gradient.addColorStop("1.0", "red");
+                    // 用渐变填色
+                    ctx.fillStyle = 'rgba(255,255,255,.8)';
+                    ctx.fillRect(292, 290, 200, 60);
+                    ctx.fillStyle = gradient;
+                    ctx.strokeStyle = gradient;
+                    ctx.strokeRect(292, 290, 200, 60);
+                    ctx.fillText(strTtxt, 300, 300);
+                    // 用渐变填色
+                    ctx.fillStyle = gradient;
+                    index++;
+                    isRunning = false;
+                    console.log(index);
+                    // return;
+                }
+                // 控制小鸟受撞击后死亡
+                if (bird.y < -5 || bird.y > c.height - birdImg.height + 10 - landImg.height) {
+                    ctx.font = "30px Verdana";
+                    // 创建渐变
+                    var strTtxt = '游戏结束啦';
+                    var textStartWidth = ctx.measureText(strTtxt).width;
+                    var gradient = ctx.createLinearGradient(300, 300, c.width, 0);
+                    gradient.addColorStop("0", "magenta");
+                    gradient.addColorStop("0.5", "blue");
+                    gradient.addColorStop("1.0", "red");
+                    // 用渐变填色
+                    ctx.fillStyle = 'rgba(255,255,255,.8)';
+                    ctx.fillRect(292, 290, 200, 60);
+                    ctx.fillStyle = gradient;
+                    ctx.strokeStyle = gradient;
+                    ctx.strokeRect(292, 290, 200, 60);
+                    ctx.fillText(strTtxt, 300, 300);
+                    // 用渐变填色
+                    ctx.fillStyle = gradient;
+                    index++;
+                    isRunning = false;
+                    console.log(index);
+                    // return;
+                }
+                if (isRunning) {
+                    window.requestAnimationFrame(fly);
+                }
+            }
+            fly();
+            text('点击开始游戏');
+            c.onclick = function () {
+                if (index > 0) {
+                    window.location.reload();
+                }
+                else if (!isRunning) {
+                    isRunning = true;
+                    startTime = new Date();
+                    fly();
+                }
+                else {
+                    bird.birdImgSpeed = -0.2;
+                }
+            }
+        });
+        function text(text) {
+
+            ctx.font = "30px Verdana";
+            // 创建渐变
+            var strTtxt = text;
+            var textStartWidth = ctx.measureText(strTtxt).width;
+            var gradient = ctx.createLinearGradient(300, 300, c.width, 0);
+            gradient.addColorStop("0", "magenta");
+            gradient.addColorStop("0.5", "blue");
+            gradient.addColorStop("1.0", "red");
+            // 用渐变填色
+            ctx.fillStyle = 'rgba(255,255,255,.8)';
+            ctx.fillRect(292, 290, 200, 60);
+            ctx.fillStyle = gradient;
+            ctx.strokeStyle = gradient;
+            ctx.strokeRect(292, 290, 200, 60);
+            ctx.fillText(strTtxt, 300, 300);
+            // 用渐变填色
+            ctx.fillStyle = gradient;
+        }
+    </script>
+</body>
+
+</html>
