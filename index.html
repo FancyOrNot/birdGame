@@ -45,7 +45,7 @@
             for (var i = 0; i < arrImg.length; i++) {
                 var img = new Image();
                 imgList[arrImg[i]] = img;
-                img.src = "../images/" + arrImg[i] + ".png";
+                img.src = "images/" + arrImg[i] + ".png";
                 img.onload = function () {
                     cound++;
                     if (cound == arrImg.length) {
